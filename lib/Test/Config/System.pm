@@ -14,11 +14,11 @@ Test::Config::System - System configuration related unit tests
 
 =head1 VERSION
 
-Version 0.22
+Version 0.23
 
 =cut
 
-our $VERSION     = '0.22';
+our $VERSION     = '0.23';
 our @EXPORT      = qw(check_package check_file check_link check_dir plan diag ok);
 our $AUTOLOAD;
 
@@ -322,7 +322,7 @@ check_package shells out to dpkg, and check_file uses an arbitrary regexp.
 =back
 
 Please report any bugs or feature requests to
-C<bug-sys-configtest at rt.cpan.org>, or through the web interface at
+C<bug-test-config-system at rt.cpan.org>, or through the web interface at
 L<http://rt.cpan.org/NoAuth/ReportBug.html?Queue=Test-Config-System>.
 I will be notified, and then you'll automatically be notified of progress on
 your bug as I make changes.
