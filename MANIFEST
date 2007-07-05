@@ -1,0 +1,13 @@
+Changes
+MANIFEST
+META.yml # Will be created by "make dist"
+Makefile.PL
+README
+lib/Test/Config/System.pm
+t/00-load.t
+t/01-check_file.t
+t/02-check_package.t
+t/03-check_link.t
+t/04-check_dir.t
+t/pod-coverage.t
+t/pod.t

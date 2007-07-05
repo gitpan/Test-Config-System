@@ -1,0 +1,31 @@
+Revision history for Test-Config-System
+
+0.22    2007-07-05
+        Fixed reference bug in check_dir
+
+0.21    2007-07-02
+        Clarified documentation for -mode in check_dir
+
+0.20    2007-07-02
+        Added check_dir
+
+0.12    2007-07-02
+        Doc patch (cleaned up FUNCTIONS section)
+
+0.11    2007-07-02
+        Some AUTOLOAD magic
+
+0.10    2007-06-29
+        Renamed file_contains -> check_file
+        Added check_link
+
+0.03    2007-06-27
+        More doc patches.
+
+0.02    2007-06-27
+        Fixed a bug in the tests and updated the docs, as suggested
+        by [naikonta].
+
+0.01    2007-06-25
+        First version, released on an unsuspecting world.
+
