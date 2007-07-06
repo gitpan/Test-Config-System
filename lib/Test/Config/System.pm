@@ -14,11 +14,11 @@ Test::Config::System - System configuration related unit tests
 
 =head1 VERSION
 
-Version 0.31
+Version 0.32
 
 =cut
 
-our $VERSION     = '0.31';
+our $VERSION     = '0.32';
 our @EXPORT      = qw(check_package check_file_contents check_link check_file check_dir plan diag ok);
 our $AUTOLOAD;
 
@@ -107,6 +107,7 @@ is the opposite).
                                       Defaults to 'dpkg'.)
 
 Examples:
+
     # Will fail if nethack is not installed
     check_package('nethack-text');
     # This will fail if x11-common is installed:
@@ -158,6 +159,7 @@ line.
   - INVERT: invert test (optional.  Possible values are 0 (default) and 1.)
 
 Examples:
+
     check_file_contents('/etc/fstab', qr|proc\s+/proc\s+proc\s+defaults\s+0\s+0|,
         'proc is in fstab');
     check_file_contents('/etc/passwd', qr|evilbob:x:\d+:\d+:|,
@@ -213,6 +215,7 @@ check_link will return undef.
   - INVERT: invert test (optional.  Possible values are 0 (default) and 1.)    
 
 Examples:
+
     check_link('/etc/alternatives/rsh', '/usr/bin/ssh');
     check_link('/etc/sudoers', '', 'sudoers is not a symlink', 1);
 
@@ -267,6 +270,7 @@ various attributes such as owner, group, or permissions.
   - INVERT: invert test (optional.  Possible values are 0 (default) and 1.)
 
 Examples:
+
     check_file('/etc/sudoers', { '-uid' => 0, '-gid' => 0, '-mode' => 0440);
 
 =head2 check_dir( PATH, [STAT, DESC, INVERT] )
@@ -275,6 +279,9 @@ check_dir is check_file for directories (they both call the same internal
 sub).  Arguments and calling are exactly the same, the only significant
 difference is that check_dir verifies that PATH is a directory rather than
 a file.
+
+Examples:
+
     check_dir('/home/ian', { '-uid' => scalar getpwnam('ian') } );
     check_dir('/root/', { '-uid' => 0, '-gid' => 0, '-mode' => 0700 },
         '/root/ has sane permissions');
