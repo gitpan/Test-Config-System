@@ -14,11 +14,11 @@ Test::Config::System - System configuration related unit tests
 
 =head1 VERSION
 
-Version 0.32
+Version 0.40
 
 =cut
 
-our $VERSION     = '0.32';
+our $VERSION     = '0.40';
 our @EXPORT      = qw(check_package check_file_contents check_link check_file check_dir plan diag ok);
 our $AUTOLOAD;
 
@@ -92,8 +92,7 @@ doesn't support symlinks).
 
 =head2 check_package( NAME, [DESC, INVERT, PACKAGE_MANAGER] )
 
-NOTE: check_package currently only supports dpkg.  If run on a non-dpkg
-system, the test will /always/ fail.
+NOTE: check_package currently only supports dpkg and rpm.
 
 check_package tests whether or not a package is installed.  If the package
 is not installed or if the given package manager does not exist, the test
@@ -103,8 +102,10 @@ is the opposite).
   - NAME: package name
   - DESC: test name (optional, defaults to package name)
   - INVERT: invert test (optional.  Possible values are 0 (default) and 1.)
-  - PACKAGE_MANAGER: package manager (optional and currently ignored.
-                                      Defaults to 'dpkg'.)
+  - PACKAGE_MANAGER: package manager (optional.  Defaults to 'dpkg'.
+                                      Supported values are 'dpkg' and 'rpm'.
+                                      If the given package manager is not
+                                      supported, returns undef)
 
 Examples:
 
@@ -116,11 +117,15 @@ Examples:
 =cut
 
 #TODO: version
-#TODO: rpm support
+#FIXME: this needs to be more portable :/
 sub check_package {
-    my ($pkg, $testname, $invert, $pkgmgr);
+    my %cmds = ( 'dpkg' => "/usr/bin/dpkg -l %s 2>/dev/null|grep '^ii' > /dev/null",
+                 'rpm'  => "/bin/rpm -q %s >/dev/null",
+               );
+
+    my ($pkg, $testname, $invert, $pkgmgr, $res);
     $pkg      = shift;
-    if (!$pkg) {
+    unless ($pkg) {
         carp "Package name required";
         return undef;
     }
@@ -128,8 +133,14 @@ sub check_package {
     $invert   = (shift || 0);
     $pkgmgr   = (shift || 'dpkg');
 
-    my $res = system("/usr/bin/dpkg -l $pkg 2>/dev/null|egrep '^ii' >/dev/null");
-    $res = $res >> 8;  # get the actual return value
+    if (exists($cmds{$pkgmgr})) { # Do we support this package manager?
+        $res = system(sprintf($cmds{$pkgmgr}, $pkg));
+        ## get the actual return value
+        $res = $res >> 8;
+    } else {
+        carp "Package manager $pkgmgr is not supported.";
+        return undef;
+    }
 
     my $tb = Test::Config::System->builder;
     $tb->ok($res == $invert, $testname);
@@ -369,10 +380,10 @@ Ian Kilgore, C<< <iank at cpan.org> >>
 
 =item * Never call check_package or check_file_contents with untrusted input.
 
-check_package shells out to dpkg, and check_file_contents uses an arbitrary
-regexp.
+check_package shells out to (dpkg|rpm), and check_file_contents runs a
+given regexp.
 
-=item * check_package currently only supports dpkg
+=item * check_package currently only supports dpkg and rpm
 
 =item * This module remains untested on windows and non-linux unixes
 

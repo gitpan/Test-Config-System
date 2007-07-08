@@ -1,5 +1,8 @@
 Revision history for Test-Config-System
 
+0.40    2007-07-08
+        Added RPM support to check_package
+
 0.32    2007-07-06
         Fixed formatting of the ``Examples'' in the POD.
 
