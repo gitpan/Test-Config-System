@@ -14,12 +14,12 @@ Test::Config::System - System configuration related unit tests
 
 =head1 VERSION
 
-Version 0.40
+Version 0.50
 
 =cut
 
-our $VERSION     = '0.40';
-our @EXPORT      = qw(check_package check_file_contents check_link check_file check_dir plan diag ok);
+our $VERSION     = '0.50';
+our @EXPORT      = qw(check_package check_any_package check_file_contents check_link check_file check_dir plan diag ok);
 our $AUTOLOAD;
 
 sub AUTOLOAD {
@@ -72,6 +72,7 @@ check they preform.
 =head1 EXPORT
 
 check_package
+check_any_package
 check_file_contents
 check_link
 check_dir
@@ -105,7 +106,7 @@ is the opposite).
   - PACKAGE_MANAGER: package manager (optional.  Defaults to 'dpkg'.
                                       Supported values are 'dpkg' and 'rpm'.
                                       If the given package manager is not
-                                      supported, returns undef)
+                                      supported, fails)
 
 Examples:
 
@@ -118,11 +119,11 @@ Examples:
 
 #TODO: version
 #FIXME: this needs to be more portable :/
-sub check_package {
-    my %cmds = ( 'dpkg' => "/usr/bin/dpkg -l %s 2>/dev/null|grep '^ii' > /dev/null",
+my %_pkgmgrs = ( 'dpkg' => "/usr/bin/dpkg -l %s 2>/dev/null|grep '^ii' > /dev/null",
                  'rpm'  => "/bin/rpm -q %s >/dev/null",
                );
 
+sub check_package {
     my ($pkg, $testname, $invert, $pkgmgr, $res);
     $pkg      = shift;
     unless ($pkg) {
@@ -133,17 +134,81 @@ sub check_package {
     $invert   = (shift || 0);
     $pkgmgr   = (shift || 'dpkg');
 
-    if (exists($cmds{$pkgmgr})) { # Do we support this package manager?
-        $res = system(sprintf($cmds{$pkgmgr}, $pkg));
-        ## get the actual return value
-        $res = $res >> 8;
-    } else {
-        carp "Package manager $pkgmgr is not supported.";
+    $res = _installedp($pkg, $pkgmgr);
+
+    my $tb = Test::Config::System->builder;
+    $tb->ok($invert ? !$res : $res, $testname)
+}
+
+=head2 check_any_package( LIST, [DESC, INVERT, PACKAGE_MANAGER] )
+
+NOTE: check_any_package currently only supports dpkg and rpm.
+
+check_any_package tests if any one in a list of packages is installed.  
+Much like Perl's "||" operator, check_any_package will short-circuit (if
+the first package is installed, the test will immediately pass without
+checking the others).
+
+  - LIST: a list of packages to check
+  - DESC: see C<check_package>
+  - INVERT: inverts test (A value of 1 will cause the test to fail
+                          unless I<none> of the given packages are installed)
+  - PACKAGE_MANAGER: see C<check_package>
+
+Examples:
+
+    # Will pass if either of the given packages are installed
+    check_any_package(['libtest-config-system-perl',
+        'cpan-libtest-config-system-perl'],
+        'Test::Config::System is installed');
+    # Will fail if either xserver-xorg or xserver-xfree86 is installed
+    check_any_package(['xserver-xorg', 'xserver-xfree86',
+        'No X11 server installed', 1);
+
+=cut
+
+sub check_any_package {
+    my ($list, $testname, $invert, $pkgmgr, $res);
+    $list = shift;
+    unless (ref($list)) {
+        carp "Require a list of package names";
         return undef;
+    }
+    $testname = (shift || $list->[0]);
+    $invert   = (shift || 0);
+    $pkgmgr   = (shift || 'dpkg');
+
+    for my $pkg (@$list) {
+        $res = _installedp($pkg, $pkgmgr);
+        last if $res;
     }
 
     my $tb = Test::Config::System->builder;
-    $tb->ok($res == $invert, $testname);
+    $tb->ok($invert ? !$res : $res, $testname);
+}
+
+
+# used by check_.*package
+sub _installedp {
+    my $res=0;
+
+    my ($pkg, $pkgmgr) = @_;
+
+    my %cmds = ( 'dpkg' => "/usr/bin/dpkg -l %s 2>/dev/null|grep '^ii' > /dev/null",
+                 'rpm'  => "/bin/rpm -q %s >/dev/null",
+               );
+
+    if (exists($_pkgmgrs{$pkgmgr})) { # Do we support this package manager?
+        $res = system(sprintf($cmds{$pkgmgr}, $pkg));
+        ## get the actual return value
+        $res = $res >> 8;
+        $res = !$res;   # shell does 0 on success...
+    } else {                    
+        carp "Package manager [$pkgmgr] is not supported";
+        $res = 0;       # otherwise fail
+    }
+
+    return $res;
 }
 
 =head2 check_file_contents( FILENAME, REGEX, [DESC, INVERT] )
@@ -178,6 +243,8 @@ Examples:
 
 =cut
 
+#TODO: should take, optionally, a hash of files/regexen or something of that
+# nature
 sub check_file_contents {
     my $tb = Test::Config::System->builder;
     my ($filename, $regex, $testname, $invert, $res);
@@ -317,7 +384,7 @@ sub check_dir {
         return $tb->ok($invert ? 1 : 0, $testname);
     }
 
-    $res = _check_path(040000, $path, $stat);
+    $res = _pathp(040000, $path, $stat);
     $tb->ok($invert ? !$res : $res, $testname);
 }
 
@@ -337,12 +404,12 @@ sub check_file {
         return $tb->ok($invert ? 1 : 0, $testname);
     }
 
-    $res = _check_path(0100000, $path, $stat);
+    $res = _pathp(0100000, $path, $stat);
     $tb->ok($invert ? !$res : $res, $testname);
 
 }
 
-sub _check_path {
+sub _pathp {
     my %tbl = ( '-uid'  => 4,
                 '-gid'  => 5,
                 '-mode' => 2,

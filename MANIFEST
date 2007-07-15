@@ -9,5 +9,6 @@ t/01-check_file_contents.t
 t/02-check_package.t
 t/03-check_link.t
 t/04-check_path.t
+t/05-check_any_package.t
 t/pod-coverage.t
 t/pod.t
