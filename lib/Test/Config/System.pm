@@ -14,12 +14,12 @@ Test::Config::System - System configuration related unit tests
 
 =head1 VERSION
 
-Version 0.50
+Version 0.51
 
 =cut
 
-our $VERSION     = '0.50';
-our @EXPORT      = qw(check_package check_any_package check_file_contents check_link check_file check_dir plan diag ok);
+our $VERSION     = '0.51';
+our @EXPORT      = qw(check_package check_any_package check_file_contents check_link check_file check_dir plan diag ok skip);
 our $AUTOLOAD;
 
 sub AUTOLOAD {
@@ -83,6 +83,7 @@ From Test::Builder::Module:
 plan
 diag
 ok
+skip
 
 =head1 FUNCTIONS
 
@@ -267,12 +268,23 @@ sub check_file_contents {
         return $tb->ok($invert ? !$res : $res, $testname);
     }
 
-    my $text = do {local $/; <$fh>};
-    close($fh);
-    $res = ($text =~ /$regex/);
+    $res = _match_file($filename,$regex);
 
     $tb->ok($invert ? !$res : $res, $testname);
 }
+
+
+sub _match_file {
+    my ($filename,$regex) = @_;
+    my $res = (open my $fh, '<', $filename);
+    return unless $res;
+
+    my $text = do {local $/; <$fh>};
+    close($fh);
+
+    return ($text =~ /$regex/);
+}
+
 
 =head2 check_link( FILENAME, [TARGET, DESC, INVERT] )
 
