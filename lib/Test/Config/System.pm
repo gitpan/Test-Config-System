@@ -14,11 +14,11 @@ Test::Config::System - System configuration related unit tests
 
 =head1 VERSION
 
-Version 0.51
+Version 0.60
 
 =cut
 
-our $VERSION     = '0.51';
+our $VERSION     = '0.60';
 our @EXPORT      = qw(check_package check_any_package check_file_contents check_link check_file check_dir plan diag ok skip);
 our $AUTOLOAD;
 
@@ -31,9 +31,6 @@ sub AUTOLOAD {
 }
 
 =head1 SYNOPSIS
-
-Test::Config::System is used to help test system configuration, ie, cfengine unit
-tests.
 
     use Test::Config::System tests => 3;
     
@@ -107,7 +104,7 @@ is the opposite).
   - PACKAGE_MANAGER: package manager (optional.  Defaults to 'dpkg'.
                                       Supported values are 'dpkg' and 'rpm'.
                                       If the given package manager is not
-                                      supported, fails)
+                                      supported, returns undef)
 
 Examples:
 
@@ -136,6 +133,7 @@ sub check_package {
     $pkgmgr   = (shift || 'dpkg');
 
     $res = _installedp($pkg, $pkgmgr);
+    return $res if !defined($res); # installedp wants us to return undef
 
     my $tb = Test::Config::System->builder;
     $tb->ok($invert ? !$res : $res, $testname)
@@ -181,6 +179,7 @@ sub check_any_package {
 
     for my $pkg (@$list) {
         $res = _installedp($pkg, $pkgmgr);
+        return $res if !defined($res); # installedp wants us to return undef
         last if $res;
     }
 
@@ -191,13 +190,28 @@ sub check_any_package {
 
 # used by check_.*package
 sub _installedp {
-    my $res=0;
+    ## Let's clean up %ENV a bit before we call a shell...
+    local %ENV;
+    $ENV{PATH}  = '/bin:/usr/bin';
+    $ENV{SHELL} = '/bin/sh' if exists $ENV{SHELL};
+    delete @ENV{qw(IFS CDPATH ENV BASH_ENV)};
 
+
+    my $res=0;
     my ($pkg, $pkgmgr) = @_;
 
     my %cmds = ( 'dpkg' => "/usr/bin/dpkg -l %s 2>/dev/null|grep '^ii' > /dev/null",
                  'rpm'  => "/bin/rpm -q %s >/dev/null",
                );
+
+    ## The debian policy is more restrictive.  I can't find any policy
+    ## information for redhat, so I'm being a bit more lenient.
+    if ($pkg =~ /^([A-Za-z0-9-+._]+)/) {
+        $pkg = $1; # This untaints $pkg
+    } else {
+        carp "Invalid package name.  If this is an error and the package is indeed valid, *please* file a bug.";
+        return undef;
+    }
 
     if (exists($_pkgmgrs{$pkgmgr})) { # Do we support this package manager?
         $res = system(sprintf($cmds{$pkgmgr}, $pkg));
@@ -206,7 +220,7 @@ sub _installedp {
         $res = !$res;   # shell does 0 on success...
     } else {                    
         carp "Package manager [$pkgmgr] is not supported";
-        $res = 0;       # otherwise fail
+        return undef;
     }
 
     return $res;
@@ -261,12 +275,6 @@ sub check_file_contents {
     }
     $testname   = (shift || $filename);
     $invert     = (shift || 0);
-
-    $res = (open my $fh, '<', $filename);
-    unless ($res) {
-#        $tb->diag("Could not open $filename: $!");
-        return $tb->ok($invert ? !$res : $res, $testname);
-    }
 
     $res = _match_file($filename,$regex);
 
@@ -383,7 +391,7 @@ sub check_dir {
     my ($path, $stat, $testname, $invert,$res);
     $path = shift;
     if (!$path) {
-        carp "path required";
+        carp "Directory name required";
         return undef;
     }
 
@@ -404,7 +412,7 @@ sub check_file {
     my ($path, $stat, $testname, $invert,$res);
     $path = shift;
     if (!$path) {
-        carp "path required";
+        carp "Filename required";
         return undef;
     }
     $stat     = (shift || { });
@@ -457,10 +465,10 @@ Ian Kilgore, C<< <iank at cpan.org> >>
 
 =over 4
 
-=item * Never call check_package or check_file_contents with untrusted input.
+=item * Never call check_file_contents with untrusted input.
 
-check_package shells out to (dpkg|rpm), and check_file_contents runs a
-given regexp.
+check_file_contents runs a given regexp, which can contain arbitrary
+perl code.
 
 =item * check_package currently only supports dpkg and rpm
 
@@ -505,7 +513,7 @@ L<http://search.cpan.org/dist/Test-Config-System>
 =head1 ACKNOWLEDGEMENTS
 
 Many thanks to [naikonta] at perlmonks, for reviewing the module before
-release.
+the release of 0.01.
 
 =head1 COPYRIGHT & LICENSE
 

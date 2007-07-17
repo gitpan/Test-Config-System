@@ -1,5 +1,12 @@
 Revision history for Test-Config-System
 
+0.60    2007-07-17
+        Added t/warnings.t to test warnings.
+        Added t/failures.t to test failure conditions.
+        Found several untested branches with Devel::Cover, added tests.
+        Return undef if package manager is unsupported.
+        Made _installedp() safer.
+
 0.51    2007-07-16
         Added Test::Builder's skip() to exports.
 

@@ -1,4 +1,4 @@
-#!perl
+#!perl -T
 
 use warnings;
 use strict;
@@ -8,7 +8,7 @@ my @pkgmgrs = ('/usr/bin/dpkg', '/bin/rpm');
 my $pkgmgr;
 
 for my $path (@pkgmgrs) {
-    (($pkgmgr) = $path =~ m!/([^/]+)$!, last) if (-x $path);
+    (($pkgmgr) = $path =~ m|/([^/]+)$|, last) if (-x $path);
 }
 
 if ($pkgmgr) {
