@@ -14,11 +14,11 @@ Test::Config::System - System configuration related unit tests
 
 =head1 VERSION
 
-Version 0.60
+Version 0.61
 
 =cut
 
-our $VERSION     = '0.60';
+our $VERSION     = '0.61';
 our @EXPORT      = qw(check_package check_any_package check_file_contents check_link check_file check_dir plan diag ok skip);
 our $AUTOLOAD;
 
@@ -31,6 +31,9 @@ sub AUTOLOAD {
 }
 
 =head1 SYNOPSIS
+
+Test::Config::System is used to help test system configuration, ie, cfengine unit
+tests.
 
     use Test::Config::System tests => 3;
     
@@ -471,8 +474,6 @@ check_file_contents runs a given regexp, which can contain arbitrary
 perl code.
 
 =item * check_package currently only supports dpkg and rpm
-
-=item * This module remains untested on windows and non-linux unixes
 
 =back
 
