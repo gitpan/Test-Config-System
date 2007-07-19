@@ -1,5 +1,8 @@
 Revision history for Test-Config-System
 
+0.62    2007-07-18
+        Changed explicit 'return undef's to bare 'return's.
+
 0.61    2007-07-18
         Tiny doc patch (removed the bit about being untested on windows)
 

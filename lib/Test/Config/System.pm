@@ -14,11 +14,11 @@ Test::Config::System - System configuration related unit tests
 
 =head1 VERSION
 
-Version 0.61
+Version 0.62
 
 =cut
 
-our $VERSION     = '0.61';
+our $VERSION     = '0.62';
 our @EXPORT      = qw(check_package check_any_package check_file_contents check_link check_file check_dir plan diag ok skip);
 our $AUTOLOAD;
 
@@ -31,9 +31,6 @@ sub AUTOLOAD {
 }
 
 =head1 SYNOPSIS
-
-Test::Config::System is used to help test system configuration, ie, cfengine unit
-tests.
 
     use Test::Config::System tests => 3;
     
@@ -88,9 +85,10 @@ skip
 =head1 FUNCTIONS
 
 Each of the functions below use Test::Builder::Module's ok() function to
-report test success or failure.  They return the result of ok() upon normal
-completion, or undef on error (eg a required parameter not provided, or FS
-doesn't support symlinks).
+report test success or failure.  They return the result of ok() upon
+normal completion, or a false value (undef in scalar context, an empty
+list in list context) on error (eg a required parameter not provided, or
+FS doesn't support symlinks).
 
 =head2 check_package( NAME, [DESC, INVERT, PACKAGE_MANAGER] )
 
@@ -107,7 +105,7 @@ is the opposite).
   - PACKAGE_MANAGER: package manager (optional.  Defaults to 'dpkg'.
                                       Supported values are 'dpkg' and 'rpm'.
                                       If the given package manager is not
-                                      supported, returns undef)
+                                      supported, returns false)
 
 Examples:
 
@@ -129,14 +127,14 @@ sub check_package {
     $pkg      = shift;
     unless ($pkg) {
         carp "Package name required";
-        return undef;
+        return;
     }
     $testname = (shift || $pkg);
     $invert   = (shift || 0);
     $pkgmgr   = (shift || 'dpkg');
 
     $res = _installedp($pkg, $pkgmgr);
-    return $res if !defined($res); # installedp wants us to return undef
+    return $res if !defined($res); # installedp wants us to return false
 
     my $tb = Test::Config::System->builder;
     $tb->ok($invert ? !$res : $res, $testname)
@@ -174,7 +172,7 @@ sub check_any_package {
     $list = shift;
     unless (ref($list)) {
         carp "Require a list of package names";
-        return undef;
+        return;
     }
     $testname = (shift || $list->[0]);
     $invert   = (shift || 0);
@@ -182,7 +180,7 @@ sub check_any_package {
 
     for my $pkg (@$list) {
         $res = _installedp($pkg, $pkgmgr);
-        return $res if !defined($res); # installedp wants us to return undef
+        return $res if !defined($res); # installedp wants us to return false
         last if $res;
     }
 
@@ -203,8 +201,8 @@ sub _installedp {
     my $res=0;
     my ($pkg, $pkgmgr) = @_;
 
-    my %cmds = ( 'dpkg' => "/usr/bin/dpkg -l %s 2>/dev/null|grep '^ii' > /dev/null",
-                 'rpm'  => "/bin/rpm -q %s >/dev/null",
+    my %cmds = ( 'dpkg' => '/usr/bin/dpkg -l %s 2>/dev/null|grep \'^ii\' > /dev/null',
+                 'rpm'  => '/bin/rpm -q %s >/dev/null',
                );
 
     ## The debian policy is more restrictive.  I can't find any policy
@@ -213,7 +211,7 @@ sub _installedp {
         $pkg = $1; # This untaints $pkg
     } else {
         carp "Invalid package name.  If this is an error and the package is indeed valid, *please* file a bug.";
-        return undef;
+        return;
     }
 
     if (exists($_pkgmgrs{$pkgmgr})) { # Do we support this package manager?
@@ -221,9 +219,9 @@ sub _installedp {
         ## get the actual return value
         $res = $res >> 8;
         $res = !$res;   # shell does 0 on success...
-    } else {                    
+    } else {
         carp "Package manager [$pkgmgr] is not supported";
-        return undef;
+        return;
     }
 
     return $res;
@@ -270,11 +268,11 @@ sub check_file_contents {
     $regex      = shift;
     if (!$filename) {
         carp "Filename required";
-        return undef;
+        return;
     }
     if (ref($regex) ne 'Regexp') {
         carp "qr// style regex required";
-        return undef;
+        return;
     }
     $testname   = (shift || $filename);
     $invert     = (shift || 0);
@@ -302,11 +300,11 @@ sub _match_file {
 check_link verifies that a symlink exists and, optionally, points to the
 correct target.
 
-If no filename is passed, it will return undef, otherwise a test will be run
-and the result of ok() will be returned.
+If no filename is passed, it will return a false value, otherwise a test
+will be run and the result of ok() will be returned.
 
 If the filesystem does not support symlinks, the test will be skipped, and
-check_link will return undef.
+check_link will return false.
 
   - FILENAME: filename (path to a symlink)
   - TARGET:   path the link should point to.  optional.  If not specified,
@@ -328,13 +326,13 @@ sub check_link {
 
     unless (eval { symlink("",""); 1 }) {
         $tb->skip("symlinks are not supported on this platform");
-        return undef;
+        return;
     }
 
     $src = shift;
     if (!$src) {
         carp "Filename required";
-        return undef;
+        return;
     }
 
     $target   = shift;
@@ -395,7 +393,7 @@ sub check_dir {
     $path = shift;
     if (!$path) {
         carp "Directory name required";
-        return undef;
+        return;
     }
 
     $stat     = (shift || { });
@@ -407,7 +405,7 @@ sub check_dir {
         return $tb->ok($invert ? 1 : 0, $testname);
     }
 
-    $res = _pathp(040000, $path, $stat);
+    $res = _pathp(oct(40000), $path, $stat);
     $tb->ok($invert ? !$res : $res, $testname);
 }
 
@@ -416,7 +414,7 @@ sub check_file {
     $path = shift;
     if (!$path) {
         carp "Filename required";
-        return undef;
+        return;
     }
     $stat     = (shift || { });
     $testname = (shift || $path);
@@ -427,7 +425,7 @@ sub check_file {
         return $tb->ok($invert ? 1 : 0, $testname);
     }
 
-    $res = _pathp(0100000, $path, $stat);
+    $res = _pathp(oct(100000), $path, $stat);
     $tb->ok($invert ? !$res : $res, $testname);
 
 }

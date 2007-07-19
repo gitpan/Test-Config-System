@@ -1,13 +1,16 @@
-# http://module-build.sourceforge.net/META-spec.html
-#XXXXXXX This is a prototype!!!  It will change in the future!!! XXXXX#
-name:         Test-Config-System
-version:      0.61
-version_from: lib/Test/Config/System.pm
-installdirs:  site
-requires:
+--- #YAML:1.0
+name:                Test-Config-System
+version:             0.62
+abstract:            System configuration related unit tests
+license:             ~
+generated_by:        ExtUtils::MakeMaker version 6.32
+distribution_type:   module
+requires:     
     File::Temp:                    0
     Test::Builder::Module:         0
     Test::More:                    0
-
-distribution_type: module
-generated_by: ExtUtils::MakeMaker version 6.30_01
+meta-spec:
+    url:     http://module-build.sourceforge.net/META-spec-v1.2.html
+    version: 1.2
+author:
+    - Ian Kilgore <iank@cpan.org>
