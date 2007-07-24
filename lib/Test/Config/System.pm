@@ -14,11 +14,11 @@ Test::Config::System - System configuration related unit tests
 
 =head1 VERSION
 
-Version 0.62
+Version 0.63
 
 =cut
 
-our $VERSION     = '0.62';
+our $VERSION     = '0.63';
 our @EXPORT      = qw(check_package check_any_package check_file_contents check_link check_file check_dir plan diag ok skip);
 our $AUTOLOAD;
 

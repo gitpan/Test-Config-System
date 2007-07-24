@@ -1,5 +1,8 @@
 Revision history for Test-Config-System
 
+0.63    2007-07-24
+        Added LICENSE file and parameter to Makefile.PL
+
 0.62    2007-07-18
         Changed explicit 'return undef's to bare 'return's.
 
